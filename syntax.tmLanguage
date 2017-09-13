@@ -7,7 +7,7 @@
         <string>cppcheck</string>
     </array>
     <key>name</key>
-    <string>Cppcheck Report</string>
+    <string>Cppcheck</string>
     <key>patterns</key>
     <array>
         <dict>
