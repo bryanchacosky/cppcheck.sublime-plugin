@@ -1,3 +1,4 @@
 [
     { "caption": "Cppcheck: Check Active File", "command": "cppcheck_active"},
+    { "caption": "Cppcheck: Check Open Files", "command": "cppcheck_open"},
 ]

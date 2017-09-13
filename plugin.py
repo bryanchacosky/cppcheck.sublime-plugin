@@ -12,12 +12,13 @@ class RewriteCommand(sublime_plugin.TextCommand):
         self.view.set_read_only(True)
 
 class CppcheckCommand(sublime_plugin.WindowCommand):
-    def run(self, source_files):
+    def run(self, rootsources):
         try:
             ### run_cppcheck
 
+            rootsources = [p for p in rootsources if re.match(r'.+\.(h|cpp)$', p, re.I)]
             settings    = sublime.load_settings('settings.sublime-settings').get('cppcheck', {})
-            cmd         = [settings.get('path')] + settings.get('args', []) + source_files
+            cmd         = [settings.get('path')] + settings.get('args', []) + rootsources
             cppcheck    = subprocess.check_output(cmd, stderr=subprocess.STDOUT, universal_newlines=True)
 
             ### generate_reports
@@ -27,7 +28,7 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
                 rmatch = re.match(r'^\[(.+)\:(.+)]:\s+\((.+)\)\s+(.+)', string)
                 if not rmatch: continue # ignore informational output
                 if not settings.get('show-included-errors', True):
-                    if rmatch.group(1) in source_files:
+                    if not rmatch.group(1) in rootsources:
                         continue # ignore non-root sources
                 reports.append({\
                     'filepath': rmatch.group(1),\
@@ -38,8 +39,8 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
             ### reports_to_string
 
             def key_report_filepath(k):
-                if k in source_files: return 0
-                return 1
+                try:    return rootsources.index(k)
+                except: return len(rootsources)
 
             def key_report_severity(k):
                 severity_order = ['error', 'warning', 'style', 'performance', 'portability', 'information']
@@ -58,8 +59,8 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
                 return s.upper()[0]
 
             def pstring_filepath(path):
-                prefix = os.path.commonprefix(list(map(lambda r:r['filepath'], reports)))
-                rmatch = re.match(r'^%s(.+)' % re.escape(prefix), path)
+                prefix = os.path.commonprefix([os.path.dirname(r['filepath']) for r in reports])
+                rmatch = re.match(r'^%s\/(.+)' % re.escape(prefix), path)
                 if not rmatch: return path
                 return rmatch.group(1)
 
@@ -98,5 +99,10 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
 
 class CppcheckActiveCommand(sublime_plugin.WindowCommand):
     def run(self):
-        source_files = [self.window.active_view().file_name()]
-        self.window.run_command('cppcheck', {'source_files':source_files})
+        rootsources = [self.window.active_view().file_name()]
+        self.window.run_command('cppcheck', {'rootsources':rootsources})
+
+class CppcheckOpenCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        rootsources = [v.file_name() for v in self.window.views()]
+        self.window.run_command('cppcheck', {'rootsources':rootsources})
