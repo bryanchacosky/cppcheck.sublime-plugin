@@ -1,7 +1,7 @@
 {
     "cppcheck": {
         "path": "/usr/local/bin/cppcheck",
-        "args": ["--force", "--enable=all"],
+        "args": ["--force", "--enable=warning"],
         "show-included-errors": false
     }
 }
