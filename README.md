@@ -6,4 +6,5 @@ Clone this repository into your local Sublime Text packages directory:
 `~/Library/Application Support/Sublime Text 3/Packages`
 
 ## usage
-Run the command `Cppcheck: Check` while the `.cpp` file is open. Results will be outputted into a new file.
+`Cppcheck: Check Active File` -- check the active `.cpp` file.
+Results will be outputted to a new file.

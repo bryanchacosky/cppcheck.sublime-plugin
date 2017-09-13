@@ -12,13 +12,12 @@ class RewriteCommand(sublime_plugin.TextCommand):
         self.view.set_read_only(True)
 
 class CppcheckCommand(sublime_plugin.WindowCommand):
-    def run(self):
+    def run(self, source_files):
         try:
             ### run_cppcheck
 
-            rootsource  = self.window.active_view().file_name()
             settings    = sublime.load_settings('settings.sublime-settings').get('cppcheck', {})
-            cmd         = [settings.get('path')] + settings.get('args', []) + [rootsource]
+            cmd         = [settings.get('path')] + settings.get('args', []) + source_files
             cppcheck    = subprocess.check_output(cmd, stderr=subprocess.STDOUT, universal_newlines=True)
 
             ### generate_reports
@@ -28,7 +27,7 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
                 rmatch = re.match(r'^\[(.+)\:(.+)]:\s+\((.+)\)\s+(.+)', string)
                 if not rmatch: continue # ignore informational output
                 if not settings.get('show-included-errors', True):
-                    if rmatch.group(1) != rootsource:
+                    if rmatch.group(1) in source_files:
                         continue # ignore non-root sources
                 reports.append({\
                     'filepath': rmatch.group(1),\
@@ -39,7 +38,7 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
             ### reports_to_string
 
             def key_report_filepath(k):
-                if k == rootsource: return 0
+                if k in source_files: return 0
                 return 1
 
             def key_report_severity(k):
@@ -87,7 +86,7 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
                 view.set_name(name)
                 return view
             
-            rname = '%s.%s' % (os.path.basename(rootsource), 'cppcheck')
+            rname = 'Cppcheck'
             rview = get_or_create_view(self.window, rname)
             rview.run_command('rewrite', {'string': pstring})
             rview.set_syntax_file('Packages/cppcheck/syntax.tmLanguage')
@@ -96,3 +95,8 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
 
         except Exception as e:
             print(e)
+
+class CppcheckActiveCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        source_files = [self.window.active_view().file_name()]
+        self.window.run_command('cppcheck', {'source_files':source_files})
