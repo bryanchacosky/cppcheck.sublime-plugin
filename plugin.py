@@ -95,7 +95,7 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
             self.window.focus_view(rview)
 
         except Exception as e:
-            print(e)
+            sublime.error_message(str(e))
 
 class CppcheckActiveCommand(sublime_plugin.WindowCommand):
     def run(self):
