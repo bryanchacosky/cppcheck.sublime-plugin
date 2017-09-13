@@ -4,6 +4,8 @@ import sublime
 import sublime_plugin
 import subprocess
 
+from itertools import groupby
+
 class RewriteCommand(sublime_plugin.TextCommand):
     def run(self, edit, string):
         self.view.set_read_only(False)
@@ -64,16 +66,22 @@ class CppcheckCommand(sublime_plugin.WindowCommand):
                 if not rmatch: return path
                 return rmatch.group(1)
 
+            def group_reports(reports):
+                rkey     = lambda r:r['filepath']
+                sreports = sorted(reports, key=rkey)
+                return {k : list(r for r in rs) for k, rs in groupby(sreports, key=rkey)}
+
             pstring = ''
             if reports:
-                for r in sorted(reports, key=key_report):
-                    pstring += '%s/%s(%s): %s\n' % (
-                        pstring_severity(r['severity']),
-                        pstring_filepath(r['filepath']),
-                        r['line'],
-                        r['message'])
-                pstring  = pstring.strip()
-                pstring += '\n\n'
+                for key, value in group_reports(reports).items():
+                    for r in sorted(value, key=key_report):
+                        pstring += '%s/%s(%s): %s\n' % (
+                            pstring_severity(r['severity']),
+                            pstring_filepath(r['filepath']),
+                            r['line'],
+                            r['message'])
+                    pstring  = pstring.strip()
+                    pstring += '\n\n'
             pstring += 'Found %i reports.' % len(reports)
             pstring += '\n'
 
